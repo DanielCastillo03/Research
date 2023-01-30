@@ -13,4 +13,4 @@ sim_human = MjSim(human_model)
 data_human = sim_human.data
 data_hoid = sim_humanoid.data
 
-print(data_human.get_body_xpos("pelvis")[2])
+print(human_model.actuator_ctrlrange)

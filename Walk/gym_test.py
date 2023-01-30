@@ -9,7 +9,7 @@ from walk_env_mjcpy import HumanWalk
 # Create environment
 env = HumanWalk()
 
-save_name = "01-20-2023__human"
+save_name = "01-30-2023_human_lowerbody"
 
 checkpoint_callback = CheckpointCallback(
   save_freq=1_000_000,
