@@ -7,7 +7,7 @@ from walk_env_mjcpy import HumanWalk
 env = HumanWalk()
 # env = gym.make("Humanoid-v3")
 
-model = PPO.load("/home/daniel/Desktop/Research/Walk/saves/01-27-2023_human.zip", env=env)
+model = PPO.load("/home/daniel/Desktop/Research/Walk/checkpoints/01-31-2023_human_lowerbody_14000000_steps.zip", env=env)
 
 
 mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
@@ -19,5 +19,5 @@ obs = vec_env.reset()
 for i in range(10000):
     action, _states = model.predict(obs, deterministic=True)
     obs, rewards, dones, info = vec_env.step(action)
-
+    print(env.data.ctrl)
     vec_env.render()

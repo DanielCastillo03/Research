@@ -13,4 +13,4 @@ sim_human = MjSim(human_model)
 data_human = sim_human.data
 data_hoid = sim_humanoid.data
 
-print(human_model.actuator_ctrlrange)
+print(len(data_human.xipos), human_model.nbody)
