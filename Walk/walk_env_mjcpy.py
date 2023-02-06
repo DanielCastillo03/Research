@@ -34,7 +34,8 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
         contact_cost_range=(-np.inf, 10.0),
         healthy_reward=5.0,
         terminate_when_unhealthy=True,
-        healthy_pelvis_range=(-0.4, 0.9),
+        healthy_pelvis_tilt_range=(-0.6, 1.2),
+        healthy_pelvisy_range = (-0.75, 0.15),
         reset_noise_scale=1e-2,
         exclude_current_positions_from_observation=False,
     ):
@@ -46,7 +47,8 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
         self._contact_cost_range = contact_cost_range
         self._healthy_reward = healthy_reward
         self._terminate_when_unhealthy = terminate_when_unhealthy
-        self._healthy_pelvis_range = healthy_pelvis_range
+        self._healthy_pelvis_tilt_range = healthy_pelvis_tilt_range
+        self._healthy_pelvisy_range = healthy_pelvisy_range
 
         self._reset_noise_scale = reset_noise_scale
 
@@ -77,9 +79,12 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
 
     @property
     def is_healthy(self):
-        min_pelvis, max_pelvis = self._healthy_pelvis_range
+        min_pelvis, max_pelvis = self._healthy_pelvis_tilt_range
+        min_pelvisy, max_pelvisy = self._healthy_pelvisy_range
 
-        is_healthy =  min_pelvis < self.data.get_joint_qpos("pelvis_tilt") < max_pelvis
+        is_healthy =  (min_pelvis < self.data.get_joint_qpos("pelvis_tilt") < max_pelvis
+                        or
+                       min_pelvisy < self.data.get_joint_qpos("pelvis_ty") < max_pelvisy)
 
 
         return is_healthy
