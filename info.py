@@ -13,4 +13,6 @@ sim_human = MjSim(human_model)
 data_human = sim_human.data
 data_hoid = sim_humanoid.data
 
-print(len(data_human.xipos), human_model.nbody)
+print(human_model.body_names, len(human_model.body_names))
+print(human_model.joint_names, len(human_model.joint_names))
+print(human_model.nu)

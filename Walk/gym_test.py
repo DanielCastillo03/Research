@@ -4,14 +4,13 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import CheckpointCallback
 from walk_env_mjcpy import HumanWalk
-from walk_env import Hman
 
 
 
 # Create environment
-env = Hman()
+env = HumanWalk()
 
-save_name = "t"
+save_name = "02-22-2023v3"
 
 checkpoint_callback = CheckpointCallback(
   save_freq=1_000_000,
@@ -23,16 +22,16 @@ checkpoint_callback = CheckpointCallback(
 #params to test
 # model = PPO("MlpPolicy", env, verbose=1, tensorboard_log = "./PPO_Walk_tensorboard/",)
 model = PPO("MlpPolicy", env, verbose=1, tensorboard_log = "./PPO_Walk_tensorboard/",
-            batch_size = 16,
-            n_steps = 512,
-            gamma = 0.995,
-            learning_rate = 7.103910717143798e-05,
-            ent_coef = 3.789297601209816e-05,
-            clip_range = 0.4,
-            gae_lambda = 0.8,
-            n_epochs = 5,
-            max_grad_norm = 0.3,
-            vf_coef = 0.7167836800871341)
+            batch_size = 512,
+            n_steps = 1024,
+            gamma = 0.99,
+            learning_rate = 2.929050476596153e-05,
+            ent_coef = 2.5089277308447216e-08,
+            clip_range = 0.1,
+            gae_lambda = 0.95,
+            n_epochs = 10,
+            max_grad_norm = 0.5,
+            vf_coef = 0.36889095328104893)
 
 
 # Train the agent and display a progress bar

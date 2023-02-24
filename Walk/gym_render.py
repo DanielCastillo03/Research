@@ -7,7 +7,7 @@ from walk_env_mjcpy import HumanWalk
 env = HumanWalk()
 # env = gym.make("Humanoid-v3")
 
-model = PPO.load("/home/daniel/Desktop/Research/Walk/checkpoints/02-15-2023_/02-15-2023_5000000_steps.zip", env=env)
+model = PPO.load("/home/daniel/Desktop/Research/Walk/checkpoints/02-22-2023v3_/02-22-2023v3_11000000_steps.zip", env=env)
 
 
 mean_reward, std_reward = evaluate_policy(model, model.get_env(), n_eval_episodes=10)
