@@ -19,4 +19,5 @@ obs = vec_env.reset()
 for i in range(10000):
     action, _states = model.predict(obs, deterministic=True)
     obs, reward, done, info = vec_env.step(action)
+    print(env.data.body_xpos[7])
     vec_env.render()

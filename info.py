@@ -14,5 +14,4 @@ data_human = sim_human.data
 data_hoid = sim_humanoid.data
 
 print(human_model.body_names, len(human_model.body_names))
-print(human_model.joint_names, len(human_model.joint_names))
-print(human_model.nu)
+print(data_human.body_xpos)
