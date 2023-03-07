@@ -37,7 +37,7 @@ class HumanWalk(MujocoEnv, utils.EzPickle):
         healthy_reward=5.0,
         terminate_when_unhealthy=True,
         healthy_z_range=(.3, 1.1),
-        healthy_patella_range = (0.0, 0.15),
+        healthy_patellaR_range = (0.0, 0.8),
         reset_noise_scale=1e-2,
         exclude_current_positions_from_observation=False,
         **kwargs,
@@ -99,7 +99,9 @@ class HumanWalk(MujocoEnv, utils.EzPickle):
     def is_healthy(self):
         min_z, max_z = self._healthy_z_range
         min_patella, max_patella = self._self_patella_range
-        is_healthy = min_z < self.data.xpos[1][2] < max_z
+        is_healthy = (min_z < self.data.xpos[1][2] < max_z and 
+                    ((min_patella <= self.data.xpos[7][2] <= max_patella) and
+                    (min_patella <= self.data.xpos[13][2] <= max_patella)))
 
         return is_healthy
 

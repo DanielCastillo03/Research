@@ -10,7 +10,7 @@ from walk_env_mjcpy import HumanWalk
 # Create environment
 env = HumanWalk()
 
-save_name = "02-22-2023v3"
+save_name = "02-28-2023 full body"
 
 checkpoint_callback = CheckpointCallback(
   save_freq=1_000_000,
@@ -20,18 +20,7 @@ checkpoint_callback = CheckpointCallback(
 )
 
 #params to test
-# model = PPO("MlpPolicy", env, verbose=1, tensorboard_log = "./PPO_Walk_tensorboard/",)
-model = PPO("MlpPolicy", env, verbose=1, tensorboard_log = "./PPO_Walk_tensorboard/",
-            batch_size = 512,
-            n_steps = 1024,
-            gamma = 0.99,
-            learning_rate = 2.929050476596153e-05,
-            ent_coef = 2.5089277308447216e-08,
-            clip_range = 0.1,
-            gae_lambda = 0.95,
-            n_epochs = 10,
-            max_grad_norm = 0.5,
-            vf_coef = 0.36889095328104893)
+model = PPO("MlpPolicy", env, verbose=1, tensorboard_log = "./PPO_Walk_tensorboard")
 
 
 # Train the agent and display a progress bar

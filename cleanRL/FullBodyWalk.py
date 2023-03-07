@@ -1,6 +1,8 @@
 import numpy as np
-from gym.envs.mujoco import mujoco_env
-from gym import utils
+
+from gymnasium import utils
+from gymnasium.envs.mujoco import MujocoEnv
+from gymnasium.spaces import Box
 
 
 DEFAULT_CAMERA_CONFIG = {
@@ -11,45 +13,54 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 
-def mass_center(model, sim):
+def mass_center(model, data):
     mass = np.expand_dims(model.body_mass, axis=1)
-    xpos = sim.data.xipos
+    xpos = data.xipos
     return (np.sum(mass * xpos, axis=0) / np.sum(mass))[0:2].copy()
 
 
-class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
+class FullBodyWalk(MujocoEnv, utils.EzPickle):
+
     metadata = {
-        "render_modes":[
-            "human"
+        "render_modes": [
+            "human",
+            "rgb_array",
+            "depth_array",
         ],
-        "render_fps": 50
+        "render_fps": 33,
     }
 
     def __init__(
         self,
-        xml_file="/home/daniel/Desktop/Research/Rajagopal2015_converted/fullbody.xml",
         forward_reward_weight=5,
         ctrl_cost_weight=0.1,
-        contact_cost_weight=5e-7,
-        contact_cost_range=(-np.inf, 10.0),
-        healthy_reward=5,
-        height_weight = 2.5,
+        healthy_reward=5.0,
         terminate_when_unhealthy=True,
-        healthy_pelvis_tilt_range=(0.4, 1.1),
-        healthy_patella = (0.0, 0.8),
+        healthy_z_range=(.935, 1.1),
+        healthy_patella = (.15, 0.75),
+        height_weight = 2.5,
         reset_noise_scale=1e-2,
         exclude_current_positions_from_observation=False,
+        **kwargs,
     ):
-        utils.EzPickle.__init__(**locals())
+        utils.EzPickle.__init__(
+            self,
+            forward_reward_weight,
+            ctrl_cost_weight,
+            healthy_reward,
+            terminate_when_unhealthy,
+            healthy_z_range,
+            reset_noise_scale,
+            exclude_current_positions_from_observation,
+            **kwargs,
+        )
 
         self._forward_reward_weight = forward_reward_weight
         self._ctrl_cost_weight = ctrl_cost_weight
-        self._contact_cost_weight = contact_cost_weight
-        self._contact_cost_range = contact_cost_range
         self._height_reward = height_weight
         self._healthy_reward = healthy_reward
         self._terminate_when_unhealthy = terminate_when_unhealthy
-        self._healthy_pelvis_tilt_range = healthy_pelvis_tilt_range
+        self._healthy_z_range = healthy_z_range
         self._healthy_patella = healthy_patella
 
         self._reset_noise_scale = reset_noise_scale
@@ -58,7 +69,22 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
             exclude_current_positions_from_observation
         )
 
-        mujoco_env.MujocoEnv.__init__(self, xml_file, 30)
+        if exclude_current_positions_from_observation:
+            observation_space = Box(
+                low=-np.inf, high=np.inf, shape=(659,), dtype=np.float64
+            )
+        else:
+            observation_space = Box(
+                low=-np.inf, high=np.inf, shape=(659,), dtype=np.float64
+            )
+
+        MujocoEnv.__init__(
+            self,
+            "/home/daniel/Desktop/Research/Rajagopal2015_converted/Rajagopal2015_converted.xml",
+            60,
+            observation_space=observation_space,
+            **kwargs,
+        )
 
     @property
     def healthy_reward(self):
@@ -68,47 +94,43 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
         )
 
     def control_cost(self, action):
-        control_cost = self._ctrl_cost_weight * np.sum(np.square(self.sim.data.ctrl))
+        control_cost = self._ctrl_cost_weight * np.sum(np.square(self.data.ctrl))
         return control_cost
 
     @property
-    def contact_cost(self):
-        contact_forces = self.sim.data.cfrc_ext
-        contact_cost = self._contact_cost_weight * np.sum(np.square(contact_forces))
-        min_cost, max_cost = self._contact_cost_range
-        contact_cost = np.clip(contact_cost, min_cost, max_cost)
-        return contact_cost
-
-    @property
     def is_healthy(self):
-        min_z, max_z = self._healthy_pelvis_tilt_range
+        min_z, max_z = self._healthy_z_range
         min_patella, max_patella = self._healthy_patella
-                    #track z cordinate of pelvis
-        is_healthy = (min_z < self.data.body_xpos[1][2] < max_z and
-                    # track z coordinate of r/l patella(kneecap)
-                    ((min_patella <=  self.data.body_xpos[7][2] <= max_patella) and (min_patella <=  self.data.body_xpos[13][2] <= max_patella)))
+                    #find the position of the torso
+        is_healthy = ((min_z <= self.data.xpos[14][2] <= max_z) and
+                    #find the position of the patell Right/Left
+                    ((min_patella <=  self.data.xpos[7][2] <= max_patella) and (min_patella <=  self.data.xpos[13][2] <= max_patella)))
 
         return is_healthy
 
     @property
     def height_check(self):
-        return (self.data.body_xpos[1][2] * self._height_reward)
-
-
+        return (
+            float(self.is_healthy or self._terminate_when_unhealthy) * (self._height_reward * self.data.xpos[14][2])
+            )
+    
     @property
-    def done(self):
-        done = (not self.is_healthy) if self._terminate_when_unhealthy else False
-        return done
+    def terminated(self):
+        terminated = (not self.is_healthy) if self._terminate_when_unhealthy else False
+        return terminated
 
     def _get_obs(self):
-        position = self.sim.data.qpos.flat.copy()
-        velocity = self.sim.data.qvel.flat.copy()
+        position = self.data.qpos.flat.copy()
+        velocity = self.data.qvel.flat.copy()
 
-        com_inertia = self.sim.data.cinert.flat.copy()
-        com_velocity = self.sim.data.cvel.flat.copy()
+        com_inertia = self.data.cinert.flat.copy()
+        com_velocity = self.data.cvel.flat.copy()
 
-        actuator_forces = self.sim.data.qfrc_actuator.flat.copy()
-        external_contact_forces = self.sim.data.cfrc_ext.flat.copy()
+        actuator_forces = self.data.qfrc_actuator.flat.copy()
+        external_contact_forces = self.data.cfrc_ext.flat.copy()
+
+        if self._exclude_current_positions_from_observation:
+            position = position[2:]
 
         return np.concatenate(
             (
@@ -122,33 +144,27 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
         )
 
     def step(self, action):
-        xy_position_before = mass_center(self.model, self.sim)
+        xy_position_before = mass_center(self.model, self.data)
         self.do_simulation(action, self.frame_skip)
-        xy_position_after = mass_center(self.model, self.sim)
+        xy_position_after = mass_center(self.model, self.data)
 
         xy_velocity = (xy_position_after - xy_position_before) / self.dt
         x_velocity, y_velocity = xy_velocity
 
         ctrl_cost = self.control_cost(action)
-        contact_cost = self.contact_cost
-
-        height = self.height_check
-
+        
         forward_reward = self._forward_reward_weight * x_velocity
         healthy_reward = self.healthy_reward
-
+        height = self.height_check
         rewards = forward_reward + healthy_reward + height
-        costs = ctrl_cost + contact_cost
 
         observation = self._get_obs()
-        reward = rewards - costs
-        reward = rewards 
-        done = self.done
+        reward = rewards - ctrl_cost
+        terminated = self.terminated
         info = {
             "reward_linvel": forward_reward,
             "reward_quadctrl": -ctrl_cost,
             "reward_alive": healthy_reward,
-            "reward_impact": -contact_cost,
             "x_position": xy_position_after[0],
             "y_position": xy_position_after[1],
             "distance_from_origin": np.linalg.norm(xy_position_after, ord=2),
@@ -157,7 +173,9 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
             "forward_reward": forward_reward,
         }
 
-        return observation, reward, done, info
+        if self.render_mode == "human":
+            self.render()
+        return observation, reward, terminated, False, info
 
     def reset_model(self):
         noise_low = -self._reset_noise_scale
@@ -173,10 +191,3 @@ class HumanWalk(mujoco_env.MujocoEnv, utils.EzPickle):
 
         observation = self._get_obs()
         return observation
-
-    def viewer_setup(self):
-        for key, value in DEFAULT_CAMERA_CONFIG.items():
-            if isinstance(value, np.ndarray):
-                getattr(self.viewer.cam, key)[:] = value
-            else:
-                setattr(self.viewer.cam, key, value)

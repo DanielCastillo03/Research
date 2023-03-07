@@ -9,10 +9,10 @@
     <site size="0.001"></site>
     <tendon width="0.001" rgba=".95 .3 .3 1" limited="false"></tendon>
     <default class="muscle">
-      <muscle ctrllimited="true" ctrlrange="0.01 1" scale="200"></muscle>
+      <muscle ctrllimited="true" ctrlrange="-0.4 .4" scale="200"></muscle>
     </default>
     <default class="motor">
-      <general ctrlrange = "0 10" ctrllimited = "true"></general>
+      <general ctrlrange = "1 10" ctrllimited = "true"></general>
     </default>
   </default>
   <option timestep="0.0005"></option>
